@@ -1,3 +1,17 @@
+#### Hotel Prediction Project ###
+#################################
+#
+#Code in this R script mirrors the Rmd(R-Markdown) document to include only the R scripts 
+#that is in the document.
+#
+##########
+#Dataset
+##########
+#(https://raw.githubusercontent.com/yhung615/Hotel-Capstone/main/tripadvisor_hotel_reviews.csv)#
+#Credits to Larxel on Kaggle#
+##########
+
+##Installing all of the necessary packages to run##
 if(!require(tidyverse)) 
   install.packages("tidyverse", repos = "http://cran.us.r-project.org")
 if(!require(caret)) 
@@ -15,11 +29,12 @@ if(!require(RColorBrewer))
 if(!require(tm)) 
   install.packages("tm", repos = "http://cran.us.r-project.org")
 
-
+##Download csv from github repo##
 dl <- tempfile()
 download.file("https://raw.githubusercontent.com/yhung615/Hotel-Capstone/main/tripadvisor_hotel_reviews.csv",dl)
 rawdata <- read.csv(dl, sep = ",")
 
+##Tokenization and organization of data to prep for sentiment analysis##
 rating <- rawdata %>%
   group_by(Review) %>%
   mutate(
@@ -30,6 +45,7 @@ rating <- rawdata %>%
 
 data <- rawdata %>% rownames_to_column()
 
+##Introduce sentiment data##
 
 sentiment_data <- data  %>% 
   unnest_tokens(word,Review) %>% 
@@ -76,6 +92,7 @@ sentiment_data %>% group_by(Rating) %>% summarize(n = n()) %>%
   ylab("Count") + xlab("Rating")
 
 ##Sentiment Distribution for individual Ratings##
+
 sentiment_data %>%  ggplot(aes(index, sentiment, fill = Rating)) +
                     geom_col(show.legend = FALSE, width = 2) + 
                     facet_wrap(.~Rating, ncol = 5, scales = "free_x") +
@@ -97,15 +114,15 @@ alt_sentiment <- rawdata %>%
 #sentiments is shown using this code below##
 
 alt_sentiment %>% group_by(sentiment, Rating) %>% 
-  count(word) %>%
-  top_n(10) %>% 
-  ggplot(., aes(reorder(word, n), n, fill = Rating)) +
-  geom_col(show.legend = T) +
-  coord_flip() +
-  facet_wrap(~sentiment, scales = "free_y") +
-  xlab("Words") +
-  ylab("frequency") +
-  ggtitle("Word Usage")
+                  count(word) %>%
+                  top_n(10) %>% 
+                  ggplot(., aes(reorder(word, n), n, fill = Rating)) +
+                  geom_col(show.legend = T) +
+                  coord_flip() +
+                  facet_wrap(~sentiment, scales = "free_y") +
+                  xlab("Words") +
+                  ylab("frequency") +
+                  ggtitle("Word Usage")
 
 
 ##Word Cloud##
@@ -131,7 +148,7 @@ neg_doc <- tm_map(neg_doc, toSpace, "\\|")
 ##Apply all as lower case##
 neg_doc <- tm_map(neg_doc,content_transformer(tolower))
 
-##Removing words that's irrevelant to save processing space##
+##Removing words, numbers, and stopwords that's irrevelant to save processing space##
 neg_doc <- tm_map(neg_doc, removeNumbers)
 neg_doc <- tm_map(neg_doc, removeWords, stopwords("English"))
 neg_doc <- tm_map(neg_doc, removeWords, 
@@ -171,7 +188,7 @@ pos_doc <- tm_map(pos_doc, toSpace, "\\|")
 ##Apply all as lower case##
 pos_doc <- tm_map(pos_doc,content_transformer(tolower))
 
-##Removing words that's irrevelant to save processing space##
+##Removing words, numbers, and stopwords thats irrevelant to save processing space##
 pos_doc <- tm_map(pos_doc, removeNumbers)
 pos_doc <- tm_map(pos_doc, removeWords, stopwords("english"))
 pos_doc <- tm_map(pos_doc, removeWords,
@@ -209,13 +226,15 @@ drop <- c("index")
 sentiment_data <- sentiment_data[,!(names(sentiment_data) %in% drop)]
 
 ##Modelling Approach##
-
+##Stratified Splitting##
 set.seed(1234, sample.kind="Rounding")
+
 test_index <- initial_split(sentiment_data, prop = 0.7,
                             strata = "Rating")
 train <- training(test_index)
 test <- testing(test_index)
 
+##Train controls##
 fitctrl <- trainControl(method = "cv", number = 10)
 
 ## Cross-Validation C5.0 ##
@@ -225,14 +244,18 @@ pred_c5 <- predict(train_c5, test)
 
 ####
 #testing difference
+
 diff <- (test$Rating)-(as.integer(pred_c5))
 #Mean Squared Error
+
 mse <- mean((diff)^2)
 print(mse)
 #Mean absolute error
+
 mae <- mean(abs(diff))
 print(mae)
 #Root Mean Squared Error
+
 rmse <- sqrt(mse)
 print(rmse)
 
@@ -244,14 +267,17 @@ c5_rf <- train(as.factor(Rating)~., data = train, method = "rf", trControl = fit
 c5_rf_pred <- predict(c5_rf, test)
 
 ####
-#testing
+#testing differences
 diff <- (test$Rating)-(as.integer(c5_rf_pred))
+
 #Mean Squared Error
 mse <- mean((diff)^2)
 print(mse)
+
 #Mean absolute error
 mae <- mean(abs(diff))
 print(mae)
+
 #Root Mean Squared Error
 rmse <- sqrt(mse)
 print(rmse)
@@ -263,14 +289,17 @@ svm_linear <- train(as.factor(Rating)~., data = train, method = "svmLinear2", tr
 svm_pred <- predict(svm_linear, test)
 
 ####
-#testing
+#testing difference
 diff <- (test$Rating)-(as.integer(svm_pred))
+
 #Mean Squared Error
 mse <- mean((diff)^2)
 print(mse)
+
 #Mean absolute error
 mae <- mean(abs(diff))
 print(mae)
+
 #Root Mean Squared Error
 rmse <- sqrt(mse)
 print(rmse)
@@ -287,14 +316,17 @@ knn$finalModel
 
 knn_pred <- predict(knn, test)
 
-#testing 
+#testing difference
 diff <- (test$Rating)-(as.integer(knn_pred))
+
 #Mean Squared Error
 mse <- mean((diff)^2)
 print(mse)
+
 #Mean absolute error
 mae <- mean(abs(diff))
 print(mae)
+
 #Root Mean Squared Error
 rmse <- sqrt(mse)
 print(rmse)
@@ -304,6 +336,7 @@ print(rmse)
 #Regression model training  
 #linear regression model is implemented using the lm() function. 
 #Rating is the dependent variable in the model and all other variables are used as predictors.
+
 linear_reg <- lm(Rating ~. , data = train[-4])
 
 #summary of the model
@@ -317,14 +350,17 @@ plot(linear_reg,1)
 #Prediction of model
 pred_lm <- predict(linear_reg,test,type = "response")
 
-#testing
+#testing difference
 diff <- test$Rating - pred_lm
+
 #Mean Squared Error
 mse <- mean((diff)^2)
 print(mse)
+
 #Mean absolute error
 mae <- mean(abs(diff))
 print(mae)
+
 #Root Mean Squared Error
 rmse <- sqrt(mse)
 print(rmse)
@@ -342,6 +378,7 @@ print(pred_lm[980])
 ## Validation ##
 
 ## 10-Fold 1-time Cross Validation ##
+
 set.seed(321)
 train.control <- trainControl(method = "cv", number=10)
 model <- train(Rating~., data = sentiment_data, method = "lm", trControl = train.control)
@@ -349,8 +386,10 @@ print(model)
 
 
 ## 10-fold 5-time Cross Validation ##
+
 set.seed(321)
 train.control <- trainControl(method = "repeatedcv", number=10, repeats = 5)
 model <- train(Rating~., data = sentiment_data, method = "lm", trControl = train.control)
 print(model)
 
+###End###
