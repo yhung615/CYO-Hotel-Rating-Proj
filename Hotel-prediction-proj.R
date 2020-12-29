@@ -1,4 +1,4 @@
-#### Hotel Prediction Project ###
+#### CYO Hotel Prediction Project ###
 #################################
 #
 #Code in this R script mirrors the Rmd(R-Markdown) document to include only the R scripts 
