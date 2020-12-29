@@ -8,3 +8,5 @@ Repository includes:
 Hotel-prediction-proj.pdf - Report
 Hotel-prediction-proj.R - Supervised-run code
 Hotel prediction proj.Rmd
+
+Be sure to view RAW, preview on GitHub cut off sentences!
